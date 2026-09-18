@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+
+{% block title %}Quantum Model (VQC) - Q-Sentinel Quantum NIDS{% endblock %}
+{% block page_title %}<i class="fas fa-atom" style="color: var(--cyan-core);"></i> Quantum Machine Learning Classifier Studio{% endblock %}
+
+{% block content %}
+<!-- Quantum Architecture Overview Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Model Architecture</span>
+      <div class="stat-icon violet"><i class="fas fa-microchip"></i></div>
+    </div>
+    <div class="stat-value" style="font-size: 1.4rem; color: #c084fc;">VQC</div>
+    <div class="stat-meta">Variational Quantum Classifier</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Quantum Register</span>
+      <div class="stat-icon cyan"><i class="fas fa-network-wired"></i></div>
+    </div>
+    <div class="stat-value" style="color: var(--cyan-core);" id="card-qubits">{{ circuit_data.get('n_qubits', 4) }} Qubits</div>
+    <div class="stat-meta">Hilbert Space: 2⁴ = 16 States</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Ansatz Depth</span>
+      <div class="stat-icon amber"><i class="fas fa-layer-group"></i></div>
+    </div>
+    <div class="stat-value" style="color: var(--amber-core);" id="card-layers">{{ circuit_data.get('n_layers', 2) }} Layers</div>
+    <div class="stat-meta">{{ circuit_data.get('n_parameters', 16) }} Parameterized Angles (θ)</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Execution Backend</span>
+      <div class="stat-icon emerald"><i class="fas fa-server"></i></div>
+    </div>
+    <div class="stat-value" style="font-size: 1.15rem; color: var(--emerald-core); font-family: var(--font-mono);">
+      Qiskit 2.5
+    </div>
+    <div class="stat-meta">Local Statevector Simulator</div>
+  </div>
+</div>
+
+<!-- Circuit Visualization Panel -->
+<div class="soc-panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">
+        <i class="fas fa-diagram-project" style="color: var(--cyan-core);"></i>
+        <span>Quantum Circuit Architecture & Entanglement Gates</span>
+      </div>
+      <div class="panel-subtitle">State preparation feature map U_Φ(x), variational ansatz W(θ), and Pauli-Z measurement</div>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="fetchCircuitDiagram()">
+      <i class="fas fa-arrows-rotate"></i> Refresh Circuit
+    </button>
+  </div>
+
+  <div class="circuit-diagram-box" id="circuitAsciiView">{{ circuit_data.get('ascii_diagram', 'Loading circuit diagram...') }}</div>
+</div>
+
+<!-- Quantum Gate Decomposition & Training Controls Grid -->
+<div class="grid-2">
+  <!-- Quantum Pipeline Decomposition -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-list-check" style="color: var(--violet-core);"></i>
+        <span>Circuit Stage Breakdown</span>
+      </div>
+      <span class="badge badge-violet">Unitary Stages</span>
+    </div>
+
+    <div class="soc-table-wrapper" style="max-height: 380px;">
+      <table class="soc-table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Quantum Gate / Operator</th>
+            <th>Target</th>
+            <th>Physical Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stage in circuit_data.get('gate_summary', []) %}
+          <tr>
+            <td style="font-family: var(--font-mono); color: var(--cyan-core);">#{{ stage.step }}</td>
+            <td style="font-weight: 600; color: #ffffff;">{{ stage.type }}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.76rem; color: #38bdf8;">{{ stage.target }}</td>
+            <td style="font-size: 0.78rem; color: var(--text-muted);">{{ stage.purpose }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Quantum Training Console -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-sliders" style="color: var(--emerald-core);"></i>
+        <span>VQC Optimization Console</span>
+      </div>
+      <span class="badge badge-emerald">SciPy COBYLA</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="form-group">
+        <label class="form-label">
+          <span>Optimization Iterations (Maxiter)</span>
+          <span style="float: right; color: var(--cyan-core); font-family: var(--font-mono);" id="iterDisplay">25 Iterations</span>
+        </label>
+        <input type="range" id="quantumMaxIter" min="10" max="60" value="25" class="form-control" style="cursor: pointer;" oninput="document.getElementById('iterDisplay').textContent = this.value + ' Iterations'">
+        <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;">
+          Finds optimal rotation parameters $\theta^*$ minimizing Binary Cross Entropy on the quantum state expectations.
+        </div>
+      </div>
+
+      <button class="btn btn-quantum" id="trainQuantumBtn" onclick="trainQuantumModel()" style="padding: 14px; font-size: 0.95rem;">
+        <i class="fas fa-play"></i> Train Quantum Classifier (VQC)
+      </button>
+
+      <!-- Training Progress / Output Display -->
+      <div id="quantumTrainingResult" style="{% if not quantum_model.is_trained %}display: none;{% endif %} margin-top: 10px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;">
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.7rem; color: var(--text-muted);">Accuracy</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--emerald-core); font-family: var(--font-mono);" id="q-acc">
+              {{ (quantum_model.metrics.get('accuracy', 0) * 100) | round(1) }}%
+            </div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.7rem; color: var(--text-muted);">Precision</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--cyan-core); font-family: var(--font-mono);" id="q-prec">
+              {{ (quantum_model.metrics.get('precision', 0) * 100) | round(1) }}%
+            </div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.7rem; color: var(--text-muted);">Recall</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--amber-core); font-family: var(--font-mono);" id="q-rec">
+              {{ (quantum_model.metrics.get('recall', 0) * 100) | round(1) }}%
+            </div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.8); padding: 10px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.7rem; color: var(--text-muted);">F1-Score</div>
+            <div style="font-size: 1.2rem; font-weight: 700; color: var(--violet-core); font-family: var(--font-mono);" id="q-f1">
+              {{ (quantum_model.metrics.get('f1_score', 0) * 100) | round(1) }}%
+            </div>
+          </div>
+        </div>
+
+        <!-- Quantum Loss Curve Canvas -->
+        <div style="height: 180px; position: relative;">
+          <canvas id="quantumLossChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let lossChart = null;
+
+  async function trainQuantumModel() {
+    const btn = document.getElementById('trainQuantumBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Optimizing Quantum Circuit Parameters...';
+    btn.disabled = true;
+
+    showToast('Executing Quantum VQC training using Qiskit 2.5 Statevector simulator...', 'info', 6000);
+
+    const maxiter = document.getElementById('quantumMaxIter').value;
+
+    try {
+      const res = await apiCall('/api/train/quantum', 'POST', { maxiter: parseInt(maxiter) });
+      if (res.success) {
+        showToast(`Quantum VQC Trained! Test Accuracy: ${(res.metrics.accuracy * 100).toFixed(1)}%`, 'success');
+        
+        // Update display
+        document.getElementById('quantumTrainingResult').style.display = 'block';
+        document.getElementById('q-acc').textContent = (res.metrics.accuracy * 100).toFixed(1) + '%';
+        document.getElementById('q-prec').textContent = (res.metrics.precision * 100).toFixed(1) + '%';
+        document.getElementById('q-rec').textContent = (res.metrics.recall * 100).toFixed(1) + '%';
+        document.getElementById('q-f1').textContent = (res.metrics.f1_score * 100).toFixed(1) + '%';
+
+        // Update circuit diagram if returned
+        if (res.circuit && res.circuit.ascii_diagram) {
+          document.getElementById('circuitAsciiView').textContent = res.circuit.ascii_diagram;
+        }
+
+        // Render loss curve
+        renderLossChart(res.metrics.loss_history || []);
+      } else {
+        showToast(res.error, 'danger');
+      }
+    } catch (err) {
+      showToast('Quantum training failed: ' + err.message, 'danger');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  }
+
+  function renderLossChart(history) {
+    const ctx = document.getElementById('quantumLossChart');
+    if (!ctx) return;
+    if (lossChart) lossChart.destroy();
+
+    const labels = history.map((_, i) => `Epoch ${i + 1}`);
+
+    lossChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Quantum Binary Cross-Entropy Loss',
+          data: history,
+          borderColor: '#00f0ff',
+          backgroundColor: 'rgba(0, 240, 255, 0.1)',
+          fill: true,
+          tension: 0.3,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#a855f7'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#64748b' }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#64748b' }
+          }
+        }
+      }
+    });
+  }
+
+  async function fetchCircuitDiagram() {
+    try {
+      const res = await apiCall('/api/circuit/diagram');
+      if (res.success && res.data) {
+        document.getElementById('circuitAsciiView').textContent = res.data.ascii_diagram;
+        showToast('Circuit diagram refreshed', 'info');
+      }
+    } catch (err) {}
+  }
+
+  // Pre-render loss curve if already available
+  const existingLoss = {{ quantum_model.metrics.get('loss_history', []) | tojson }};
+  if (existingLoss && existingLoss.length > 0) {
+    renderLossChart(existingLoss);
+  }
+</script>
+{% endblock %}

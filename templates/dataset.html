@@ -1,0 +1,350 @@
+{% extends 'base.html' %}
+
+{% block title %}Dataset Analysis - Q-Sentinel Quantum NIDS{% endblock %}
+{% block page_title %}<i class="fas fa-database" style="color: var(--cyan-core);"></i> Network Traffic Dataset Analysis & Preprocessing{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Total Records</span>
+      <div class="stat-icon cyan"><i class="fas fa-file-lines"></i></div>
+    </div>
+    <div class="stat-value" id="card-total">{{ summary.get('total_records', 0) }}</div>
+    <div class="stat-meta">Session flow rows</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Feature Columns</span>
+      <div class="stat-icon violet"><i class="fas fa-diagram-project"></i></div>
+    </div>
+    <div class="stat-value" id="card-features">{{ summary.get('total_features', 0) }}</div>
+    <div class="stat-meta">Telemetry dimensions</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Missing Values</span>
+      <div class="stat-icon emerald"><i class="fas fa-filter-circle-xmark"></i></div>
+    </div>
+    <div class="stat-value" style="color: var(--emerald-core);" id="card-missing">{{ summary.get('total_missing', 0) }}</div>
+    <div class="stat-meta">Null cells detected</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-header">
+      <span class="stat-label">Detected Attack Classes</span>
+      <div class="stat-icon crimson"><i class="fas fa-shield-virus"></i></div>
+    </div>
+    <div class="stat-value" style="color: var(--crimson-core);" id="card-classes">
+      {{ summary.get('class_distribution', {}) | length }}
+    </div>
+    <div class="stat-meta">Target categories</div>
+  </div>
+</div>
+
+<!-- Upload & Control Grid -->
+<div class="grid-2">
+  <!-- Dataset Upload Dropzone -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-cloud-arrow-up" style="color: var(--cyan-core);"></i>
+        <span>Ingest Network Flow CSV</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="loadSampleDataset()">
+        <i class="fas fa-arrows-rotate"></i> Load Default Demo Dataset
+      </button>
+    </div>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div id="dropzone" style="border: 2px dashed rgba(0, 240, 255, 0.3); border-radius: var(--radius-md); padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: rgba(0, 240, 255, 0.02);">
+        <i class="fas fa-file-csv" style="font-size: 2.8rem; color: var(--cyan-core); margin-bottom: 12px; display: block;"></i>
+        <div style="font-weight: 600; color: #ffffff; margin-bottom: 6px;">
+          Drag and drop network CSV dataset here, or <span style="color: var(--cyan-core); text-decoration: underline;">Browse Files</span>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">
+          Supports standard IDS datasets (CIC-IDS, NSL-KDD, UNSW-NB15, or custom network traffic captures).
+        </div>
+        <input type="file" id="datasetFileInput" name="dataset" accept=".csv" style="display: none;" onchange="handleFileSelected(this)">
+      </div>
+      
+      <div id="fileSelectionInfo" style="display: none; margin-top: 14px; padding: 10px 14px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--emerald-core); border-radius: var(--radius-sm); font-size: 0.82rem; color: #6ee7b7; display: flex; align-items: center; justify-content: space-between;">
+        <span id="selectedFileName"></span>
+        <button type="button" class="btn btn-primary btn-sm" onclick="uploadDataset()">
+          <i class="fas fa-upload"></i> Process Dataset
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Preprocessing & Feature Selection Control -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-sliders" style="color: var(--violet-core);"></i>
+        <span>Quantum Preprocessing Configuration</span>
+      </div>
+      <span class="badge badge-violet">Qubit Encoder</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div class="form-group">
+        <label class="form-label">
+          <span>Target Quantum Qubits (Feature Selection K)</span>
+          <span style="float: right; color: var(--cyan-core); font-family: var(--font-mono);" id="qubitValueDisplay">4 Qubits</span>
+        </label>
+        <input type="range" id="nFeaturesRange" min="2" max="8" value="4" class="form-control" style="cursor: pointer;" oninput="document.getElementById('qubitValueDisplay').textContent = this.value + ' Qubits'">
+        <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;">
+          Selects top K features using ANOVA F-value test, mapping each selected network dimension to a qubit rotation angle $\theta \in [0, \pi]$.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Train / Test Split Ratio</label>
+        <select id="splitRatioSelect" class="form-control">
+          <option value="0.2">80% Training / 20% Evaluation Test Split (Recommended)</option>
+          <option value="0.3">70% Training / 30% Evaluation Test Split</option>
+          <option value="0.25">75% Training / 25% Evaluation Test Split</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 8px;">
+        <button class="btn btn-quantum" style="flex: 1;" onclick="runPreprocessing()">
+          <i class="fas fa-microchip"></i> Execute Feature Selection & Split
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Class Balance & Column Summary Grid -->
+<div class="grid-2">
+  <!-- Class Distribution Chart -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-chart-pie" style="color: var(--emerald-core);"></i>
+        <span>Target Class Proportions</span>
+      </div>
+    </div>
+    <div style="height: 260px; position: relative;">
+      <canvas id="datasetDistChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Columns & Null Stats -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-table-columns" style="color: var(--amber-core);"></i>
+        <span>Feature Schema Overview</span>
+      </div>
+      <span class="badge badge-amber">{{ summary.get('columns', []) | length }} Columns</span>
+    </div>
+    
+    <div class="soc-table-wrapper" style="max-height: 260px;">
+      <table class="soc-table">
+        <thead>
+          <tr>
+            <th>Column Name</th>
+            <th>Type</th>
+            <th>Nulls</th>
+            <th>Mean / Unique</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for col in summary.get('columns', []) %}
+          <tr>
+            <td style="font-family: var(--font-mono); color: {% if col.is_label %}var(--crimson-core){% else %}#38bdf8{% endif %};">
+              {{ col.name }} {% if col.is_label %}<span class="badge badge-crimson" style="font-size: 0.65rem;">LABEL</span>{% endif %}
+            </td>
+            <td style="font-size: 0.78rem; color: var(--text-muted);">{{ col.type }}</td>
+            <td>
+              <span class="badge {% if col.missing > 0 %}badge-amber{% else %}badge-emerald{% endif %}" style="font-size: 0.7rem;">
+                {{ col.missing }}
+              </span>
+            </td>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem;">
+              {{ col.mean if col.mean != '-' else (col.unique ~ ' unique') }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Dataset Preview Table -->
+<div class="soc-panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="fas fa-eye" style="color: var(--cyan-core);"></i>
+      <span>Network Flow Records Preview (First 10 Rows)</span>
+    </div>
+    <span class="badge badge-cyan">Raw Telemetry</span>
+  </div>
+
+  <div class="soc-table-wrapper">
+    <table class="soc-table">
+      <thead>
+        <tr>
+          {% if summary.get('columns') %}
+            {% for col in summary.columns[:10] %}
+              <th>{{ col.name }}</th>
+            {% endfor %}
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if summary.get('preview') %}
+          {% for row in summary.preview %}
+          <tr>
+            {% for col in summary.columns[:10] %}
+            <td style="font-family: var(--font-mono); font-size: 0.78rem;">
+              {% if col.name == summary.label_column %}
+                <span class="badge {% if row[col.name] == 'Normal' %}badge-emerald{% else %}badge-crimson{% endif %}">
+                  {{ row[col.name] }}
+                </span>
+              {% else %}
+                {{ row[col.name] }}
+              {% endif %}
+            </td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="10" style="text-align: center; color: var(--text-muted);">No preview data available</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // File dropzone logic
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('datasetFileInput');
+  
+  if (dropzone) {
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'var(--cyan-core)';
+      dropzone.style.background = 'rgba(0, 240, 255, 0.08)';
+    });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+      dropzone.style.background = 'rgba(0, 240, 255, 0.02)';
+    });
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.style.borderColor = 'rgba(0, 240, 255, 0.3)';
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        handleFileSelected(fileInput);
+      }
+    });
+  }
+
+  function handleFileSelected(input) {
+    if (input.files.length > 0) {
+      const file = input.files[0];
+      document.getElementById('selectedFileName').textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      document.getElementById('fileSelectionInfo').style.display = 'flex';
+    }
+  }
+
+  async function uploadDataset() {
+    if (!fileInput.files.length) return;
+    const formData = new FormData();
+    formData.append('dataset', fileInput.files[0]);
+
+    showToast('Uploading and analyzing network CSV...', 'info');
+    try {
+      const res = await apiCall('/api/dataset/upload', 'POST', formData);
+      if (res.success) {
+        showToast(res.message, 'success');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showToast(res.error, 'danger');
+      }
+    } catch (err) {
+      showToast('Error uploading dataset', 'danger');
+    }
+  }
+
+  async function loadSampleDataset() {
+    showToast('Loading pre-bundled demo dataset...', 'info');
+    try {
+      const res = await apiCall('/api/dataset/load-sample', 'POST');
+      if (res.success) {
+        showToast(res.message, 'success');
+        setTimeout(() => window.location.reload(), 800);
+      }
+    } catch (err) {
+      showToast('Failed to load sample dataset', 'danger');
+    }
+  }
+
+  async function runPreprocessing() {
+    const nFeatures = document.getElementById('nFeaturesRange').value;
+    const splitRatio = document.getElementById('splitRatioSelect').value;
+
+    showToast(`Selecting top ${nFeatures} quantum features...`, 'info');
+    try {
+      const res = await apiCall('/api/preprocess', 'POST', {
+        n_features: nFeatures,
+        test_size: splitRatio
+      });
+      if (res.success) {
+        const qCols = res.data.quantum_features.join(', ');
+        showToast(`Preprocessing Complete! Selected Quantum Qubits: ${qCols}`, 'success');
+      } else {
+        showToast(res.error, 'danger');
+      }
+    } catch (err) {
+      showToast('Preprocessing error', 'danger');
+    }
+  }
+
+  // Distribution Chart
+  const classDistData = {{ summary.get('class_distribution', {}) | tojson }};
+  const ctxDist = document.getElementById('datasetDistChart');
+  if (ctxDist && Object.keys(classDistData).length > 0) {
+    new Chart(ctxDist, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(classDistData),
+        datasets: [{
+          data: Object.values(classDistData),
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(239, 68, 68, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(0, 240, 255, 0.8)'
+          ],
+          borderColor: '#0a101f',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+          }
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

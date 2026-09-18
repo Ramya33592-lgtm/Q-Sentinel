@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}About Project - Q-Sentinel Quantum NIDS{% endblock %}
+{% block page_title %}<i class="fas fa-circle-info" style="color: var(--cyan-core);"></i> About Q-Sentinel Cybersecurity Architecture{% endblock %}
+
+{% block content %}
+<!-- Project Hero Panel -->
+<div class="soc-panel" style="background: linear-gradient(135deg, rgba(8, 14, 28, 0.95), rgba(168, 85, 247, 0.08)); border-color: rgba(0, 240, 255, 0.25);">
+  <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+    <div style="width: 72px; height: 72px; border-radius: 20px; background: rgba(0, 240, 255, 0.1); border: 2px solid var(--cyan-core); display: flex; align-items: center; justify-content: center; color: var(--cyan-core); font-size: 2.2rem; box-shadow: 0 0 25px rgba(0, 240, 255, 0.3);">
+      <i class="fas fa-atom"></i>
+    </div>
+    <div style="flex: 1;">
+      <span class="badge badge-cyan" style="margin-bottom: 6px;">PROJECT OVERVIEW</span>
+      <h2 style="font-size: 1.5rem; color: #ffffff; font-weight: 800; margin-bottom: 6px;">
+        Q-Sentinel – Quantum Machine Learning Based Network Intrusion Detection System
+      </h2>
+      <p style="color: #94a3b8; font-size: 0.92rem; line-height: 1.6; max-width: 850px;">
+        Q-Sentinel represents a forward-looking cybersecurity paradigm combining classical security telemetry preprocessing with quantum state encoding and Variational Quantum Classifiers (VQC). By mapping network session metrics into high-dimensional Hilbert space, Q-Sentinel captures intricate feature correlations that evade traditional linear thresholds.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Workflow Diagram Panel -->
+<div class="soc-panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="fas fa-diagram-project" style="color: var(--cyan-core);"></i>
+      <span>End-to-End System Pipeline</span>
+    </div>
+    <span class="badge badge-cyan">SOC Architecture</span>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; text-align: center; font-family: var(--font-mono); font-size: 0.78rem;">
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-file-csv" style="font-size: 1.6rem; color: var(--cyan-core); margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">1. Dataset</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Flow Records</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-filter" style="font-size: 1.6rem; color: var(--emerald-core); margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">2. Preprocess</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Clean & Scale</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-crosshairs" style="font-size: 1.6rem; color: var(--amber-core); margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">3. Select K</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">ANOVA F-test</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-microchip" style="font-size: 1.6rem; color: #38bdf8; margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">4. Classical ML</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Random Forest</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-atom" style="font-size: 1.6rem; color: var(--violet-core); margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">5. Quantum ML</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Qiskit VQC</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-shield-virus" style="font-size: 1.6rem; color: var(--crimson-core); margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">6. Prediction</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Threat Class</div>
+    </div>
+    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-subtle); padding: 16px 10px; border-radius: 10px;">
+      <i class="fas fa-bell" style="font-size: 1.6rem; color: #f43f5e; margin-bottom: 8px; display: block;"></i>
+      <div style="font-weight: 700; color: #ffffff;">7. SOC Alert</div>
+      <div style="font-size: 0.68rem; color: var(--text-muted);">Audit & Audio</div>
+    </div>
+  </div>
+</div>
+
+<!-- Mathematical Formulation & QML Advantages Grid -->
+<div class="grid-2">
+  <!-- Mathematical Principles -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-square-root-variable" style="color: var(--cyan-core);"></i>
+        <span>Mathematical Formulation</span>
+      </div>
+      <span class="badge badge-cyan">Quantum Physics</span>
+    </div>
+
+    <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <strong style="color: #ffffff;">1. Angle Feature Encoding:</strong>
+        <p>Continuous network features $x \in [0, \pi]^n$ are mapped to single-qubit rotations:</p>
+        <code style="background: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 4px; color: #38bdf8; font-family: var(--font-mono); display: block; margin-top: 4px;">
+          |ψ_0(x)⟩ = ⨂_{i=0}^{n-1} R_z(2x_i) R_y(x_i) H |0⟩
+        </code>
+      </div>
+
+      <div>
+        <strong style="color: #ffffff;">2. Circular Entanglement (CNOT Ring):</strong>
+        <p>Creates Bell-like non-local state correlations between packet length, flow duration, and protocol velocity:</p>
+        <code style="background: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 4px; color: #d8b4fe; font-family: var(--font-mono); display: block; margin-top: 4px;">
+          U_{ent} = ∏_{i=0}^{n-1} CX(q_i, q_{(i+1) \pmod n})
+        </code>
+      </div>
+
+      <div>
+        <strong style="color: #ffffff;">3. Variational Ansatz & Expectation Value:</strong>
+        <p>Parameterized rotations $W(\theta)$ optimize classification boundary. The attack probability is derived via Pauli-Z expectation on the primary register:</p>
+        <code style="background: rgba(0, 0, 0, 0.5); padding: 4px 8px; border-radius: 4px; color: #34d399; font-family: var(--font-mono); display: block; margin-top: 4px;">
+          ⟨Z_0⟩ = ⟨0| (U_Φ W(θ))† Z_0 (U_Φ W(θ)) |0⟩, &nbsp; P(Attack) = (1 - ⟨Z_0⟩)/2
+        </code>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Seminar Highlights -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-award" style="color: var(--amber-core);"></i>
+        <span>Why Quantum in Cybersecurity?</span>
+      </div>
+      <span class="badge badge-amber">Innovation</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;">
+      <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 14px; border-radius: 8px; border-left: 3px solid var(--cyan-core);">
+        <strong style="color: #ffffff;">Exponential Hilbert Space Capacity:</strong>
+        <div>$n$ qubits simulate an expressive state space of $2^n$ dimensions, allowing a compact 4-qubit register to detect non-linear attack interactions without massive neural networks.</div>
+      </div>
+
+      <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 14px; border-radius: 8px; border-left: 3px solid var(--violet-core);">
+        <strong style="color: #ffffff;">Real Execution via Local Simulator:</strong>
+        <div>Q-Sentinel uses Qiskit 2.5 with full local Statevector computation, enabling zero-cloud, privacy-compliant on-premise execution for classified SOC environments.</div>
+      </div>
+
+      <div style="background: rgba(15, 23, 42, 0.6); padding: 12px 14px; border-radius: 8px; border-left: 3px solid var(--emerald-core);">
+        <strong style="color: #ffffff;">Hybrid Defense System:</strong>
+        <div>Leverages the ultra-fast inference speed of Random Forests alongside the geometric sensitivity of Variational Quantum circuits for defense-in-depth.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

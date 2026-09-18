@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}Attack Detection - Q-Sentinel Quantum NIDS{% endblock %}
+{% block page_title %}<i class="fas fa-crosshairs" style="color: var(--crimson-core);"></i> Live Network Traffic Attack Detection{% endblock %}
+
+{% block content %}
+<!-- Attack Simulation Presets Bar -->
+<div class="soc-panel" style="padding: 16px 22px; margin-bottom: 20px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <i class="fas fa-flask" style="color: var(--cyan-core); font-size: 1.1rem;"></i>
+      <span style="font-weight: 700; font-size: 0.9rem;">Simulation Incursion Presets:</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="injectAttackPreset('ddos')" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+        <i class="fas fa-bolt"></i> DDoS Flood
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="injectAttackPreset('portscan')" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+        <i class="fas fa-radar"></i> Port Scan
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="injectAttackPreset('bruteforce')" style="border-color: rgba(168, 85, 247, 0.4); color: #c084fc;">
+        <i class="fas fa-key"></i> Brute Force
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="injectAttackPreset('botnet')" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+        <i class="fas fa-robot"></i> Botnet C2
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="injectAttackPreset('normal')" style="border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
+        <i class="fas fa-shield-check"></i> Normal Traffic
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Prominent Red Alert Banner (Hidden until attack detected) -->
+<div id="redAlertBanner" class="alert-incursion-banner" style="display: none;">
+  <div class="alert-incursion-icon">
+    <i class="fas fa-triangle-exclamation"></i>
+  </div>
+  <div style="flex: 1;">
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+      <span class="badge badge-crimson" style="font-size: 0.82rem; padding: 4px 12px;" id="alertThreatBadge">
+        CRITICAL THREAT
+      </span>
+      <span style="font-family: var(--font-mono); font-size: 0.8rem; color: #fca5a5;" id="alertTimestamp"></span>
+      <span class="badge badge-cyan" id="alertIdBadge">ALERT #</span>
+    </div>
+    <h3 style="color: #ffffff; font-size: 1.25rem; font-weight: 700; margin-bottom: 4px;" id="alertTitle">
+      Malicious Incursion Detected: DDoS Attack
+    </h3>
+    <p style="color: #cbd5e1; font-size: 0.86rem; line-height: 1.5;" id="alertSummary">
+      The hybrid quantum-classical engine identified anomalous traffic signature matching malicious parameters.
+    </p>
+  </div>
+  <a href="/alerts" class="btn btn-danger" style="white-space: nowrap;">
+    <i class="fas fa-arrow-right"></i> Open SOC Incident
+  </a>
+</div>
+
+<!-- Input & Output Grid -->
+<div class="grid-2">
+  <!-- Network Packet Parameters Form -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-network-wired" style="color: var(--cyan-core);"></i>
+        <span>Network Packet Telemetry Input</span>
+      </div>
+      <span class="badge badge-cyan">Flow Metrics</span>
+    </div>
+
+    <form id="predictionForm" onsubmit="event.preventDefault(); runPrediction();">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div class="form-group">
+          <label class="form-label">Simulated Source IP</label>
+          <input type="text" id="source_ip" class="form-control" value="192.168.1.188">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Destination Port</label>
+          <input type="number" id="destination_port" class="form-control" value="80">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Flow Duration (ms)</label>
+          <input type="number" step="any" id="flow_duration" class="form-control" value="15000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Flow Packets / Sec</label>
+          <input type="number" step="any" id="flow_packets_per_sec" class="form-control" value="65">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Total Forward Packets</label>
+          <input type="number" id="total_fwd_packets" class="form-control" value="12">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Total Backward Packets</label>
+          <input type="number" id="total_bwd_packets" class="form-control" value="10">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Flow Bytes / Sec</label>
+          <input type="number" step="any" id="flow_bytes_per_sec" class="form-control" value="45000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">SYN Flag Count</label>
+          <input type="number" id="syn_flag_count" class="form-control" value="1">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Packet Length Mean (bytes)</label>
+          <input type="number" step="any" id="packet_length_mean" class="form-control" value="650">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Packet Length Std Dev</label>
+          <input type="number" step="any" id="packet_length_std" class="form-control" value="120">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ACK Flag Count</label>
+          <input type="number" id="ack_flag_count" class="form-control" value="9">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Protocol Type</label>
+          <select id="protocol_type" class="form-control">
+            <option value="TCP">TCP</option>
+            <option value="UDP">UDP</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px;">
+        <button type="submit" id="predictBtn" class="btn btn-primary" style="width: 100%; padding: 14px; font-size: 0.95rem;">
+          <i class="fas fa-crosshairs"></i> Run Quantum Threat Detection
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Inference Result & Explainability Card -->
+  <div class="soc-panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <i class="fas fa-brain" style="color: var(--violet-core);"></i>
+        <span>Detection Verdict & Explainability</span>
+      </div>
+      <span class="badge badge-emerald" id="statusBadgeHeader">Awaiting Packet</span>
+    </div>
+
+    <div id="resultPlaceholder" style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+      <i class="fas fa-shield-halved" style="font-size: 3rem; color: rgba(0, 240, 255, 0.3); margin-bottom: 14px; display: block;"></i>
+      <p style="font-size: 0.9rem;">Select an Attack Preset above or enter packet telemetry and click <b>Run Quantum Threat Detection</b>.</p>
+    </div>
+
+    <!-- Active Results Container -->
+    <div id="resultContent" style="display: none;">
+      <!-- Verdict Pill Row -->
+      <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.8); padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+        <div>
+          <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Primary Verdict</div>
+          <div style="font-size: 1.5rem; font-weight: 800; font-family: var(--font-mono);" id="resVerdict">
+            Attack Detected
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <div style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">Threat Severity</div>
+          <span class="badge" id="resThreatBadge" style="font-size: 0.9rem; padding: 6px 16px; margin-top: 4px;">
+            CRITICAL
+          </span>
+        </div>
+      </div>
+
+      <!-- Quantum vs Classical Gauge Row -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+        <!-- Quantum VQC Evaluation -->
+        <div style="background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: var(--radius-md); padding: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 0.76rem; font-weight: 600; color: #d8b4fe;">Quantum VQC</span>
+            <span class="badge badge-violet" id="qIsAttackBadge">ATTACK</span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff; font-family: var(--font-mono);" id="qConfidence">
+            94.2%
+          </div>
+          <div style="font-size: 0.74rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 4px;" id="qExpectation">
+            &lt;Z_0&gt; = -0.884
+          </div>
+        </div>
+
+        <!-- Classical Model Evaluation -->
+        <div style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.3); border-radius: var(--radius-md); padding: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 0.76rem; font-weight: 600; color: #7dd3fc;">Classical Model</span>
+            <span class="badge badge-cyan" id="cIsAttackBadge">ATTACK</span>
+          </div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff; font-family: var(--font-mono);" id="cConfidence">
+            98.5%
+          </div>
+          <div style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px;" id="cPredictedClass">
+            Class: DDoS
+          </div>
+        </div>
+      </div>
+
+      <!-- Explainable AI Reasons -->
+      <div style="background: rgba(10, 16, 31, 0.85); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px;">
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--cyan-core); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-magnifying-glass-chart"></i> Explainable AI (XAI) Suspiciousness Analysis:
+        </div>
+        <ul id="explanationList" style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  async function injectAttackPreset(attackType) {
+    showToast(`Injecting ${attackType.toUpperCase()} simulated packet...`, 'info', 2000);
+    try {
+      const res = await apiCall(`/api/demo/preset/${attackType}`);
+      if (res.success && res.data) {
+        const p = res.data;
+        document.getElementById('source_ip').value = p.source_ip;
+        for (const [k, v] of Object.entries(p.features)) {
+          const el = document.getElementById(k);
+          if (el) el.value = v;
+        }
+        showToast(`Preset "${p.name}" loaded into telemetry form.`, 'success');
+      }
+    } catch (err) {
+      showToast('Error loading attack preset', 'danger');
+    }
+  }
+
+  async function runPrediction() {
+    const btn = document.getElementById('predictBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Evaluating Quantum Observables...';
+    btn.disabled = true;
+
+    // Build payload
+    const features = {
+      flow_duration: parseFloat(document.getElementById('flow_duration').value),
+      flow_packets_per_sec: parseFloat(document.getElementById('flow_packets_per_sec').value),
+      total_fwd_packets: parseInt(document.getElementById('total_fwd_packets').value),
+      total_bwd_packets: parseInt(document.getElementById('total_bwd_packets').value),
+      flow_bytes_per_sec: parseFloat(document.getElementById('flow_bytes_per_sec').value),
+      syn_flag_count: parseInt(document.getElementById('syn_flag_count').value),
+      packet_length_mean: parseFloat(document.getElementById('packet_length_mean').value),
+      packet_length_std: parseFloat(document.getElementById('packet_length_std').value),
+      ack_flag_count: parseInt(document.getElementById('ack_flag_count').value),
+      urg_flag_count: 0,
+      destination_port: parseInt(document.getElementById('destination_port').value),
+      protocol_type: document.getElementById('protocol_type').value
+    };
+
+    const sourceIp = document.getElementById('source_ip').value;
+
+    try {
+      const res = await apiCall('/api/predict', 'POST', {
+        features: features,
+        source_ip: sourceIp
+      });
+
+      if (res.success) {
+        document.getElementById('resultPlaceholder').style.display = 'none';
+        document.getElementById('resultContent').style.display = 'block';
+
+        const isAttack = res.is_attack;
+        const attackType = res.attack_type;
+        const threatLevel = res.threat_level;
+        const confidence = (res.confidence * 100).toFixed(1);
+
+        // Header badge
+        const badgeHeader = document.getElementById('statusBadgeHeader');
+        badgeHeader.className = isAttack ? 'badge badge-crimson' : 'badge badge-emerald';
+        badgeHeader.textContent = isAttack ? 'THREAT DETECTED' : 'BENIGN FLOW';
+
+        // Verdict pill
+        const verdictEl = document.getElementById('resVerdict');
+        verdictEl.textContent = isAttack ? `${attackType} Incursion` : 'Normal Benign Traffic';
+        verdictEl.style.color = isAttack ? 'var(--crimson-core)' : 'var(--emerald-core)';
+
+        // Threat badge
+        const threatBadge = document.getElementById('resThreatBadge');
+        threatBadge.textContent = threatLevel.toUpperCase();
+        threatBadge.className = isAttack 
+          ? (threatLevel === 'Critical' ? 'badge badge-crimson' : 'badge badge-amber')
+          : 'badge badge-emerald';
+
+        // Quantum metrics
+        const qPred = res.quantum_prediction;
+        document.getElementById('qConfidence').textContent = `${(qPred.confidence * 100).toFixed(1)}%`;
+        document.getElementById('qIsAttackBadge').textContent = qPred.is_attack ? 'ATTACK' : 'BENIGN';
+        document.getElementById('qIsAttackBadge').className = qPred.is_attack ? 'badge badge-crimson' : 'badge badge-emerald';
+        document.getElementById('qExpectation').textContent = `<Z_0> = ${qPred.expectation_value_z0}`;
+
+        // Classical metrics
+        const cPred = res.classical_prediction;
+        document.getElementById('cConfidence').textContent = `${(cPred.confidence * 100).toFixed(1)}%`;
+        document.getElementById('cIsAttackBadge').textContent = cPred.is_attack ? 'ATTACK' : 'BENIGN';
+        document.getElementById('cIsAttackBadge').className = cPred.is_attack ? 'badge badge-crimson' : 'badge badge-emerald';
+        document.getElementById('cPredictedClass').textContent = `Class: ${cPred.attack_type}`;
+
+        // Explainability list
+        const expList = document.getElementById('explanationList');
+        expList.innerHTML = '';
+        (res.explanation_list || []).forEach(item => {
+          const li = document.createElement('li');
+          li.style.cssText = 'display: flex; align-items: flex-start; gap: 8px;';
+          li.innerHTML = `<i class="fas fa-triangle-exclamation" style="color: ${isAttack ? '#ef4444' : '#10b981'}; margin-top: 3px;"></i> <span>${item}</span>`;
+          expList.appendChild(li);
+        });
+
+        // Trigger Red Alert Banner if attack
+        const banner = document.getElementById('redAlertBanner');
+        if (isAttack) {
+          banner.style.display = 'flex';
+          document.getElementById('alertTitle').textContent = `Malicious Incursion Detected: ${attackType}`;
+          document.getElementById('alertThreatBadge').textContent = `${threatLevel.toUpperCase()} RISK`;
+          document.getElementById('alertTimestamp').textContent = new Date().toLocaleTimeString();
+          document.getElementById('alertIdBadge').textContent = `ALERT #${res.alert_id || 'SOC'}`;
+          document.getElementById('alertSummary').textContent = res.explanation;
+
+          // Sound siren!
+          if (window.socAudio) {
+            window.socAudio.playAlarm(threatLevel);
+          }
+          showToast(`ALERT: Malicious ${attackType} detected with ${confidence}% confidence!`, 'danger', 6000);
+        } else {
+          banner.style.display = 'none';
+          if (window.socAudio) {
+            window.socAudio.playChirp();
+          }
+          showToast('Packet verified: Benign operational traffic', 'success');
+        }
+      } else {
+        showToast(res.error, 'danger');
+      }
+    } catch (err) {
+      showToast('Inference error: ' + err.message, 'danger');
+    } finally {
+      btn.innerHTML = '<i class="fas fa-crosshairs"></i> Run Quantum Threat Detection';
+      btn.disabled = false;
+    }
+  }
+</script>
+{% endblock %}

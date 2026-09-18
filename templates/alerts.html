@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Security Alerts - Q-Sentinel Quantum NIDS{% endblock %}
+{% block page_title %}<i class="fas fa-bell" style="color: var(--crimson-core);"></i> SOC Incident Response & Incursion Alerts{% endblock %}
+
+{% block content %}
+<!-- Alerts Header & Action Bar -->
+<div class="soc-panel" style="padding: 16px 24px; margin-bottom: 24px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <span class="badge badge-crimson" style="font-size: 0.82rem; padding: 6px 14px;">
+        {{ alerts | length }} Incursions Logged
+      </span>
+      <span style="font-size: 0.82rem; color: var(--text-muted);">
+        Encrypted SQLite Audit Ledger
+      </span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button class="btn btn-outline btn-sm" onclick="exportAlertsJson()">
+        <i class="fas fa-download"></i> Export Incident JSON
+      </button>
+      <a href="/detection" class="btn btn-primary btn-sm">
+        <i class="fas fa-crosshairs"></i> Simulate Incursion
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Alerts Table Panel -->
+<div class="soc-panel">
+  <div class="panel-header">
+    <div class="panel-title">
+      <i class="fas fa-list-check" style="color: var(--cyan-core);"></i>
+      <span>Incident Ledger</span>
+    </div>
+    <span class="badge badge-cyan">SOC Live Queue</span>
+  </div>
+
+  {% if alerts %}
+  <div class="soc-table-wrapper">
+    <table class="soc-table">
+      <thead>
+        <tr>
+          <th>Alert ID</th>
+          <th>Timestamp</th>
+          <th>Source IP : Port</th>
+          <th>Attack Type</th>
+          <th>Threat Level</th>
+          <th>Confidence</th>
+          <th>Model</th>
+          <th>Status</th>
+          <th>Explanation</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alert in alerts %}
+        <tr>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: var(--cyan-core);">#{{ alert.id }}</td>
+          <td style="font-family: var(--font-mono); font-size: 0.76rem;">{{ alert.timestamp }}</td>
+          <td style="font-family: var(--font-mono); color: #38bdf8; font-size: 0.8rem;">
+            {{ alert.source_ip }}:{{ alert.destination_port }}
+          </td>
+          <td>
+            <span class="badge {% if alert.attack_type == 'DDoS' %}badge-crimson{% elif alert.attack_type == 'Port Scan' %}badge-amber{% elif alert.attack_type == 'Brute Force' %}badge-violet{% else %}badge-cyan{% endif %}">
+              {{ alert.attack_type }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {% if alert.threat_level == 'Critical' %}badge-crimson{% elif alert.threat_level == 'High' %}badge-amber{% else %}badge-emerald{% endif %}">
+              {{ alert.threat_level }}
+            </span>
+          </td>
+          <td style="font-family: var(--font-mono); font-weight: 700; color: #ffffff;">
+            {{ (alert.confidence * 100) | round(1) }}%
+          </td>
+          <td style="font-size: 0.74rem; color: var(--text-muted); font-family: var(--font-mono);">
+            {{ alert.model_type }}
+          </td>
+          <td>
+            <span id="alert-status-{{ alert.id }}" class="badge {% if alert.status == 'Resolved' %}badge-emerald{% elif alert.status == 'Investigating' %}badge-amber{% else %}badge-crimson{% endif %}">
+              {{ alert.status }}
+            </span>
+          </td>
+          <td style="font-size: 0.74rem; color: #cbd5e1; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ alert.explanation }}">
+            {{ alert.explanation or 'Anomalous traffic signature' }}
+          </td>
+          <td>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-outline btn-sm" style="padding: 4px 8px;" title="Mark Investigating" onclick="resolveAlert({{ alert.id }}, 'Investigating')">
+                <i class="fas fa-magnifying-glass"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" style="padding: 4px 8px; color: var(--emerald-core); border-color: var(--emerald-core);" title="Mark Resolved" onclick="resolveAlert({{ alert.id }}, 'Resolved')">
+                <i class="fas fa-check"></i>
+              </button>
+              <button class="btn btn-outline btn-sm" style="padding: 4px 8px; color: var(--text-muted);" title="Dismiss" onclick="resolveAlert({{ alert.id }}, 'Dismissed')">
+                <i class="fas fa-xmark"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+    <i class="fas fa-shield-check" style="font-size: 3rem; color: var(--emerald-core); margin-bottom: 14px; display: block;"></i>
+    <h3 style="color: #ffffff; margin-bottom: 8px;">No Threats Detected</h3>
+    <p style="font-size: 0.85rem; max-width: 480px; margin: 0 auto 20px;">
+      All monitored sessions are complying with baseline network flow patterns. You can inject an attack preset from the Attack Detection page to test alert logging.
+    </p>
+    <a href="/detection" class="btn btn-primary btn-sm">
+      <i class="fas fa-crosshairs"></i> Simulate Malicious Incursion
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function exportAlertsJson() {
+    const alertsData = {{ alerts | tojson }};
+    const blob = new Blob([JSON.stringify(alertsData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qsentinel_alerts_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showToast('Alerts ledger exported as JSON', 'success');
+  }
+</script>
+{% endblock %}

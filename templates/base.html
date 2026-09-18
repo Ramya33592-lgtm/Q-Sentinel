@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Q-Sentinel - Quantum Machine Learning NIDS{% endblock %}</title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Q-Sentinel SOC Theme -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/soc-theme.css') }}">
+  
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+  <!-- Navigation Sidebar -->
+  <aside class="soc-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <i class="fas fa-atom"></i>
+      </div>
+      <div>
+        <div class="brand-title">Q-SENTINEL</div>
+        <div class="brand-subtitle">Quantum NIDS SOC</div>
+      </div>
+    </div>
+
+    <div class="nav-section-title">Core Operations</div>
+    <ul class="nav-links">
+      <li class="nav-item">
+        <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-line"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/dataset" class="nav-link {% if active_page == 'dataset' %}active{% endif %}">
+          <i class="fas fa-database"></i>
+          <span>Dataset Analysis</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/quantum" class="nav-link {% if active_page == 'quantum' %}active{% endif %}">
+          <i class="fas fa-microchip"></i>
+          <span>Quantum Model (VQC)</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/detection" class="nav-link {% if active_page == 'detection' %}active{% endif %}">
+          <i class="fas fa-crosshairs"></i>
+          <span>Attack Detection</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/comparison" class="nav-link {% if active_page == 'comparison' %}active{% endif %}">
+          <i class="fas fa-scale-balanced"></i>
+          <span>Model Comparison</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/alerts" class="nav-link {% if active_page == 'alerts' %}active{% endif %}">
+          <i class="fas fa-bell"></i>
+          <span>Security Alerts</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/about" class="nav-link {% if active_page == 'about' %}active{% endif %}">
+          <i class="fas fa-circle-info"></i>
+          <span>About Project</span>
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-status">
+      <div class="quantum-engine-badge">
+        <div class="status-indicator"></div>
+        <span>Qiskit 2.5 Simulator Ready</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content View -->
+  <main class="soc-main">
+    <!-- Top Bar -->
+    <header class="soc-topbar">
+      <div class="topbar-left">
+        <h1 class="page-title">
+          {% block page_title %}Security Operations Center{% endblock %}
+        </h1>
+        <div class="security-posture-pill {% if summary and summary.get('threat_level') == 'Critical' %}posture-critical{% else %}posture-normal{% endif %}">
+          <i class="fas {% if summary and summary.get('threat_level') == 'Critical' %}fa-triangle-exclamation{% else %}fa-shield-check{% endif %}"></i>
+          <span>Threat Posture: {{ summary.get('threat_level', 'Nominal') if summary else 'Nominal' }}</span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <button id="audioToggleBtn" class="audio-toggle-btn" onclick="window.socAudio.toggleMute()">
+          <i class="fas fa-volume-up"></i> Sound Active
+        </button>
+        <button class="demo-tour-btn" onclick="window.demoTour.startDemo()">
+          <i class="fas fa-graduation-cap"></i>
+          <span>Seminar Demo Flow</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Content Area -->
+    <div class="soc-content">
+      {% block content %}{% endblock %}
+
+      <!-- Concluding Motto Banner displayed on all pages -->
+      <div class="quantum-quote-banner">
+        <div class="quantum-quote-text">
+          “AI detects patterns. Quantum Machine Learning explores a new approach to detecting complex cyber threats.”
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">
+          Q-Sentinel Next-Gen Defense Platform • Powered by Qiskit Quantum Statevector Computation
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Global Application Scripts -->
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/demo-tour.js') }}"></script>
+  {% block scripts %}{% endblock %}
+
+</body>
+</html>
